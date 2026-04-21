@@ -1,5 +1,5 @@
 export type ErrorCorrection = "L" | "M" | "Q" | "H";
-export type QxFormat = "svg" | "png" | "webp";
+export type QrCodeFormat = "svg" | "png" | "webp";
 
 export type LogoSpec = {
   source: string;
@@ -8,7 +8,7 @@ export type LogoSpec = {
   padding?: number;
 };
 
-export type QxOptions = {
+export type QrCodeOptions = {
   errorCorrection?: ErrorCorrection;
   foreground?: string;
   background?: string;
@@ -18,7 +18,7 @@ export type QxOptions = {
   margin?: number;
 };
 
-export type QxRenderOptions = Omit<QxOptions, "scale">;
+export type QrCodeRenderOptions = Omit<QrCodeOptions, "scale">;
 
 export type ResolvedRenderOptions = {
   errorCorrection: ErrorCorrection;
@@ -29,7 +29,7 @@ export type ResolvedRenderOptions = {
   margin: number;
 };
 
-export type ResolvedQxOptions = ResolvedRenderOptions & {
+export type ResolvedQrCodeOptions = ResolvedRenderOptions & {
   scale: number;
 };
 

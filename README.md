@@ -1,6 +1,6 @@
-# qxcode
+# qrcode
 
-`qxcode` is an isomorphic QR code library with a zero-dependency encoding core and an SVG-first rendering pipeline.
+`@sidny/qrcode` is an isomorphic QR code library with a zero-dependency encoding core and an SVG-first rendering pipeline.
 
 ## Examples
 
@@ -38,10 +38,10 @@ It is built around a few specific goals:
 
 ## Install
 
-Core SVG usage does not need any runtime dependency beyond `qxcode`.
+Core SVG usage does not need any runtime dependency beyond `@sidny/qrcode`.
 
 ```bash
-bun add qxcode
+bun add @sidny/qrcode
 ```
 
 Optional raster support on Bun/Node:
@@ -53,9 +53,9 @@ bun add sharp
 ## Quick Start
 
 ```ts
-import { qxcode } from "qxcode";
+import { qrcode } from "@sidny/qrcode";
 
-const svg = await qxcode("https://plarza.com", {
+const svg = await qrcode("https://plarza.com", {
   format: "svg",
   foreground: "#111827",
   background: "#f8fafc",
@@ -81,7 +81,7 @@ export type LogoSpec = {
   padding?: number;
 };
 
-export type QxOptions = {
+export type QrCodeOptions = {
   errorCorrection?: ErrorCorrection;
   foreground?: string;
   background?: string;
@@ -91,17 +91,17 @@ export type QxOptions = {
   margin?: number;
 };
 
-export function qxcode(data: string, opts: QxOptions & { format: "svg" }): Promise<string>;
-export function qxcode(data: string, opts: QxOptions & { format: "png" }): Promise<Uint8Array>;
-export function qxcode(data: string, opts: QxOptions & { format: "webp" }): Promise<Uint8Array>;
+export function qrcode(data: string, opts: QrCodeOptions & { format: "svg" }): Promise<string>;
+export function qrcode(data: string, opts: QrCodeOptions & { format: "png" }): Promise<Uint8Array>;
+export function qrcode(data: string, opts: QrCodeOptions & { format: "webp" }): Promise<Uint8Array>;
 
 export function encode(data: string, ecl?: ErrorCorrection): QrMatrix;
-export function toSvg(matrix: QrMatrix, opts?: Omit<QxOptions, "scale">): string;
+export function toSvg(matrix: QrMatrix, opts?: Omit<QrCodeOptions, "scale">): string;
 ```
 
 ## API Notes
 
-### `qxcode(data, opts)`
+### `qrcode(data, opts)`
 
 High-level async API.
 
@@ -141,7 +141,7 @@ Low-level synchronous SVG renderer.
 Important:
 
 - if you pass a logo to `toSvg()`, `logo.source` must already be a data URL
-- use `qxcode()` when you want file paths or remote URLs normalized automatically
+- use `qrcode()` when you want file paths or remote URLs normalized automatically
 
 ## Runtime Behavior
 
@@ -158,7 +158,7 @@ SVG is always available and stays zero dependency.
 - Browser:
   `OffscreenCanvas` + `createImageBitmap()` + `convertToBlob()`
 
-If the required raster backend is unavailable, `qxcode()` throws a helpful runtime error.
+If the required raster backend is unavailable, `qrcode()` throws a helpful runtime error.
 
 ## Logo Behavior
 
@@ -188,9 +188,9 @@ Notes:
 ### Server-side SVG
 
 ```ts
-import { qxcode } from "qxcode";
+import { qrcode } from "@sidny/qrcode";
 
-const svg = await qxcode("https://plarza.com", {
+const svg = await qrcode("https://plarza.com", {
   format: "svg",
   foreground: "#111827",
   background: "#ffffff",
@@ -200,9 +200,9 @@ const svg = await qxcode("https://plarza.com", {
 ### Server-side raster output
 
 ```ts
-import { qxcode } from "qxcode";
+import { qrcode } from "@sidny/qrcode";
 
-const png = await qxcode("https://plarza.com", {
+const png = await qrcode("https://plarza.com", {
   format: "png",
   scale: 12,
   errorCorrection: "Q",
@@ -212,9 +212,9 @@ const png = await qxcode("https://plarza.com", {
 ### Browser logo URL
 
 ```ts
-import { qxcode } from "qxcode";
+import { qrcode } from "@sidny/qrcode";
 
-const svg = await qxcode("https://plarza.com", {
+const svg = await qrcode("https://plarza.com", {
   format: "svg",
   errorCorrection: "H",
   logo: {
@@ -229,7 +229,7 @@ const svg = await qxcode("https://plarza.com", {
 ### Zero-dependency sync path
 
 ```ts
-import { encode, toSvg } from "qxcode";
+import { encode, toSvg } from "@sidny/qrcode";
 
 const matrix = encode("hello world", "M");
 const svg = toSvg(matrix, {
@@ -242,7 +242,7 @@ const svg = toSvg(matrix, {
 ### Sync path with a pre-normalized logo
 
 ```ts
-import { encode, toSvg } from "qxcode";
+import { encode, toSvg } from "@sidny/qrcode";
 
 const matrix = encode("hello world", "H");
 const svg = toSvg(matrix, {

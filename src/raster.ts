@@ -1,6 +1,6 @@
-import type { QxFormat } from "./types.ts";
+import type { QrCodeFormat } from "./types.ts";
 
-type RasterFormat = Exclude<QxFormat, "svg">;
+type RasterFormat = Exclude<QrCodeFormat, "svg">;
 
 type RasterBackend = {
   canRasterize: () => boolean;

@@ -1,5 +1,5 @@
 {
-  "name": "qxcode",
+  "name": "@sidny/qrcode",
   "version": "0.1.0",
   "description": "Isomorphic QR code library with a zero-dependency encoding core and an SVG-first rendering pipeline.",
   "keywords": [
@@ -10,13 +10,13 @@
     "png",
     "webp"
   ],
-  "homepage": "https://github.com/s1dny/qxcode#readme",
+  "homepage": "https://github.com/s1dny/qrcode#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/s1dny/qxcode.git"
+    "url": "git+https://github.com/s1dny/qrcode.git"
   },
   "bugs": {
-    "url": "https://github.com/s1dny/qxcode/issues"
+    "url": "https://github.com/s1dny/qrcode/issues"
   },
   "type": "module",
   "module": "./index.ts",

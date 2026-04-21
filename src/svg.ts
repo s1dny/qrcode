@@ -96,7 +96,7 @@ function layoutLogo(matrix: QrMatrix, margin: number, logo?: LogoSpec): SvgLogoL
 
   if (!isDataUrl(logo.source)) {
     throw new Error(
-      "toSvg() only supports logo.source values that are already data URLs. Use qxcode() for file paths and remote URLs.",
+      "toSvg() only supports logo.source values that are already data URLs. Use qrcode() for file paths and remote URLs.",
     );
   }
 
