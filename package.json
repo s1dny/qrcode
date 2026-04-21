@@ -1,6 +1,6 @@
 {
   "name": "@sidny/qrcode",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Isomorphic QR code library with a zero-dependency encoding core and an SVG-first rendering pipeline.",
   "keywords": [
     "qr",
