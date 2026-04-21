@@ -7,13 +7,28 @@ type RasterBackend = {
   rasterize: (svg: string, size: number, format: RasterFormat) => Promise<Uint8Array>;
 };
 
+type BrowserCanvasLike = {
+  width: number;
+  height: number;
+  getContext: (kind: "2d") => BrowserCanvasContext | null;
+};
+
 type BrowserBitmap = {
   close?: () => void;
+};
+
+type BrowserImageElement = {
+  decoding?: string;
+  onload: (() => void) | null;
+  onerror: (() => void) | null;
+  src: string;
 };
 
 type BrowserCanvasContext = {
   clearRect: (...args: number[]) => void;
   drawImage: (...args: unknown[]) => void;
+  imageSmoothingEnabled?: boolean;
+  imageSmoothingQuality?: "low" | "medium" | "high";
 };
 
 type BrowserOffscreenCanvas = {
@@ -24,6 +39,74 @@ type BrowserOffscreenCanvas = {
 type BrowserRasterGlobals = {
   OffscreenCanvas?: new (width: number, height: number) => BrowserOffscreenCanvas;
   createImageBitmap?: (image: Blob) => Promise<BrowserBitmap>;
+  document?: {
+    createElement: (tagName: "canvas") => BrowserDomCanvas;
+  };
+  Image?: new () => BrowserImageElement;
+};
+
+type BrowserDomCanvas = BrowserCanvasLike & {
+  toBlob: (callback: (blob: Blob | null) => void, type: string) => void;
+};
+
+const DOM_RASTER_SUPERSAMPLE_SCALE = 4;
+
+const browserDomRasterBackend: RasterBackend = {
+  canRasterize() {
+    const globals = getBrowserRasterGlobals();
+    return typeof globals.document?.createElement === "function" && typeof globals.Image === "function";
+  },
+  async rasterize(svg, size, format) {
+    const globals = getBrowserRasterGlobals();
+    const documentCtor = globals.document;
+    const ImageCtor = globals.Image;
+
+    if (!documentCtor || !ImageCtor) {
+      throw new Error("This browser runtime cannot rasterize QR codes because DOM canvas primitives are unavailable.");
+    }
+
+    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      const image = await loadSvgImage(svgUrl, ImageCtor);
+      const supersampleScale = shouldSupersampleSvg(svg) ? DOM_RASTER_SUPERSAMPLE_SCALE : 1;
+      const rasterSize = size * supersampleScale;
+
+      const rasterCanvas = documentCtor.createElement("canvas");
+      rasterCanvas.width = rasterSize;
+      rasterCanvas.height = rasterSize;
+
+      const rasterContext = rasterCanvas.getContext("2d");
+      if (!rasterContext) {
+        throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
+      }
+
+      rasterContext.clearRect(0, 0, rasterSize, rasterSize);
+      rasterContext.drawImage(image, 0, 0, rasterSize, rasterSize);
+
+      const outputCanvas = supersampleScale === 1 ? rasterCanvas : documentCtor.createElement("canvas");
+      if (outputCanvas !== rasterCanvas) {
+        outputCanvas.width = size;
+        outputCanvas.height = size;
+
+        const outputContext = outputCanvas.getContext("2d");
+        if (!outputContext) {
+          throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
+        }
+
+        outputContext.imageSmoothingEnabled = true;
+        outputContext.imageSmoothingQuality = "high";
+        outputContext.clearRect(0, 0, size, size);
+        outputContext.drawImage(rasterCanvas, 0, 0, size, size);
+      }
+
+      const blob = await canvasToBlob(outputCanvas, format);
+      return new Uint8Array(await blob.arrayBuffer());
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  },
 };
 
 const browserRasterBackend: RasterBackend = {
@@ -102,6 +185,10 @@ export async function rasterizeSvg(svg: string, size: number, format: RasterForm
 }
 
 function getRasterBackend(): RasterBackend {
+  if (browserDomRasterBackend.canRasterize()) {
+    return browserDomRasterBackend;
+  }
+
   if (browserRasterBackend.canRasterize()) {
     return browserRasterBackend;
   }
@@ -120,4 +207,34 @@ function hasBrowserRasterPrimitives(): boolean {
 
 function getBrowserRasterGlobals(): BrowserRasterGlobals {
   return globalThis as unknown as BrowserRasterGlobals;
+}
+
+async function loadSvgImage(svgUrl: string, ImageCtor: new () => BrowserImageElement): Promise<BrowserImageElement> {
+  return await new Promise((resolve, reject) => {
+    const image = new ImageCtor();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to decode the SVG QR image for rasterization."));
+    image.src = svgUrl;
+  });
+}
+
+function shouldSupersampleSvg(svg: string): boolean {
+  return svg.includes('shape-rendering="geometricPrecision"');
+}
+
+async function canvasToBlob(canvas: BrowserDomCanvas, format: RasterFormat): Promise<Blob> {
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob: Blob | null) => {
+        if (!blob) {
+          reject(new Error("Failed to encode the QR raster output."));
+          return;
+        }
+
+        resolve(blob);
+      },
+      format === "png" ? "image/png" : "image/webp",
+    );
+  });
 }
