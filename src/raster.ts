@@ -1,4 +1,4 @@
-import type { QrCodeFormat } from "./types.ts";
+import type { QrCodeFormat } from "./types.js";
 
 type RasterFormat = Exclude<QrCodeFormat, "svg">;
 

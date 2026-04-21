@@ -1,4 +1,4 @@
-import { getAlignmentPatternPositions, getSizeForVersion, getVersionBits } from "./spec.ts";
+import { getAlignmentPatternPositions, getSizeForVersion, getVersionBits } from "./spec.js";
 
 export function buildFunctionPatterns(version: number): {
   modules: boolean[][];

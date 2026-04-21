@@ -1,8 +1,8 @@
-import type { ErrorCorrection, QrMatrix } from "./types.ts";
+import type { ErrorCorrection, QrMatrix } from "./types.js";
 
-import { applyMask, drawFormatBits, pickBestMask } from "./core/mask.ts";
-import { buildFunctionPatterns, placeCodewords } from "./core/matrix.ts";
-import { reedSolomonComputeDivisor, reedSolomonComputeRemainder } from "./core/reed-solomon.ts";
+import { applyMask, drawFormatBits, pickBestMask } from "./core/mask.js";
+import { buildFunctionPatterns, placeCodewords } from "./core/matrix.js";
+import { reedSolomonComputeDivisor, reedSolomonComputeRemainder } from "./core/reed-solomon.js";
 import {
   MAX_VERSION,
   MIN_VERSION,
@@ -11,7 +11,7 @@ import {
   getNumDataCodewords,
   getNumErrorCorrectionBlocks,
   getNumRawDataModules,
-} from "./core/spec.ts";
+} from "./core/spec.js";
 
 export function encode(data: string, ecl: ErrorCorrection = "M"): QrMatrix {
   const payload = new TextEncoder().encode(data);

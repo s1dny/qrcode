@@ -1,10 +1,10 @@
-import { encode } from "./core.ts";
-import { normalizeLogo } from "./logo.ts";
-import { resolveQrCodeOptions } from "./options.ts";
-import { rasterizeSvg } from "./raster.ts";
-import { toSvg } from "./svg.ts";
+import { encode } from "./core.js";
+import { normalizeLogo } from "./logo.js";
+import { resolveQrCodeOptions } from "./options.js";
+import { rasterizeSvg } from "./raster.js";
+import { toSvg } from "./svg.js";
 
-import type { ErrorCorrection, LogoSpec, QrCodeFormat, QrCodeOptions, QrMatrix } from "./types.ts";
+import type { ErrorCorrection, LogoSpec, QrCodeFormat, QrCodeOptions, QrMatrix } from "./types.js";
 
 export type { ErrorCorrection, LogoSpec, QrCodeOptions, QrMatrix };
 

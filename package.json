@@ -1,6 +1,6 @@
 {
   "name": "@sidny/qrcode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Isomorphic QR code library with a zero-dependency encoding core and an SVG-first rendering pipeline.",
   "keywords": [
     "qr",
@@ -19,28 +19,30 @@
     "url": "https://github.com/s1dny/qrcode/issues"
   },
   "type": "module",
-  "module": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.ts",
-      "import": "./index.ts",
-      "default": "./index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
-    "index.ts",
-    "src",
+    "dist",
     "img",
     "README.md"
   ],
   "sideEffects": false,
   "scripts": {
-    "pack:check": "npm pack --dry-run",
+    "build": "tsc -p tsconfig.build.json",
+    "pack:check": "npm run build && npm pack --dry-run",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint .",
-    "lint:fix": "oxlint --fix ."
+    "lint:fix": "oxlint --fix .",
+    "prepack": "npm run build"
   },
   "publishConfig": {
     "access": "public"

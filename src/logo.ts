@@ -1,4 +1,4 @@
-import type { LogoSpec } from "./types.ts";
+import type { LogoSpec } from "./types.js";
 
 export async function normalizeLogo(logo?: LogoSpec): Promise<LogoSpec | undefined> {
   if (!logo) {

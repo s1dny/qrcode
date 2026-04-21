@@ -1,6 +1,6 @@
-import { resolveRenderOptions } from "./options.ts";
+import { resolveRenderOptions } from "./options.js";
 
-import type { LogoSpec, QrMatrix, QxRenderOptions } from "./types.ts";
+import type { LogoSpec, QrCodeRenderOptions, QrMatrix } from "./types.js";
 
 const ROUND_RADIUS = 1;
 
@@ -58,7 +58,7 @@ const INNER_MOVE_SUFFIX: Record<DirectionKey, string> = {
 
 const CORNER_KEYS = ["ld", "ul", "ru", "dr", "ur", "rd", "dl", "lu"] as const satisfies readonly CornerMoveKey[];
 
-export function toSvg(matrix: QrMatrix, opts: QxRenderOptions = {}): string {
+export function toSvg(matrix: QrMatrix, opts: QrCodeRenderOptions = {}): string {
   const resolved = resolveRenderOptions(opts);
   const rounded = resolved.rounded;
   const totalSize = matrix.size + resolved.margin * 2;

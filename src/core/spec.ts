@@ -1,4 +1,4 @@
-import type { ErrorCorrection } from "../types.ts";
+import type { ErrorCorrection } from "../types.js";
 
 export const MIN_VERSION = 1;
 export const MAX_VERSION = 40;

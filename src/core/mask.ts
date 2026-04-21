@@ -1,6 +1,6 @@
-import type { ErrorCorrection } from "../types.ts";
+import type { ErrorCorrection } from "../types.js";
 
-import { getFormatBits } from "./spec.ts";
+import { getFormatBits } from "./spec.js";
 
 export function pickBestMask(modules: boolean[][], functionModules: boolean[][], ecl: ErrorCorrection): number {
   const size = modules.length;

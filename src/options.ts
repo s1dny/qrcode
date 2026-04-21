@@ -4,7 +4,7 @@ import type {
   QrCodeRenderOptions,
   ResolvedQrCodeOptions,
   ResolvedRenderOptions,
-} from "./types.ts";
+} from "./types.js";
 
 export const QRCODE_DEFAULTS = {
   errorCorrection: "M" as ErrorCorrection,
