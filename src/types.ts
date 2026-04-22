@@ -2,7 +2,7 @@ export type ErrorCorrection = "L" | "M" | "Q" | "H";
 export type QrCodeFormat = "svg" | "png" | "webp";
 
 export type LogoSpec = {
-  source: string;
+  source?: string;
   width: number;
   height: number;
   padding?: number;

@@ -75,7 +75,7 @@ const svg = await qrcode("https://plarza.com", {
 export type ErrorCorrection = "L" | "M" | "Q" | "H";
 
 export type LogoSpec = {
-  source: string;
+  source?: string;
   width: number;
   height: number;
   padding?: number;
@@ -94,6 +94,8 @@ export type QrCodeOptions = {
 export function qrcode(data: string, opts: QrCodeOptions & { format: "svg" }): Promise<string>;
 export function qrcode(data: string, opts: QrCodeOptions & { format: "png" }): Promise<Uint8Array>;
 export function qrcode(data: string, opts: QrCodeOptions & { format: "webp" }): Promise<Uint8Array>;
+export function getAlignedRasterSize(svg: string, minimumSize: number): number;
+export function rasterizeSvg(svg: string, size: number, format: "png" | "webp"): Promise<Uint8Array>;
 
 export function encode(data: string, ecl?: ErrorCorrection): QrMatrix;
 export function toSvg(matrix: QrMatrix, opts?: Omit<QrCodeOptions, "scale">): string;
@@ -140,8 +142,9 @@ Low-level synchronous SVG renderer.
 
 Important:
 
-- if you pass a logo to `toSvg()`, `logo.source` must already be a data URL
+- if you pass a logo with `source` to `toSvg()`, `logo.source` must already be a data URL
 - use `qrcode()` when you want file paths or remote URLs normalized automatically
+- omit `logo.source` when you only want the logo cutout and will draw your own centered artwork
 
 ## Runtime Behavior
 

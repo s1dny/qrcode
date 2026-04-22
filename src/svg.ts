@@ -14,7 +14,7 @@ type CutoutBox = {
 type SvgLogoLayout = {
   cutout: CutoutBox;
   image: CutoutBox;
-  source: string;
+  source?: string;
 };
 
 type MoveKey = CardinalMoveKey | CornerMoveKey;
@@ -78,7 +78,7 @@ export function toSvg(matrix: QrMatrix, opts: QrCodeRenderOptions = {}): string 
     foregroundMarkup,
   ];
 
-  if (logo) {
+  if (logo?.source) {
     const logoScale = rounded ? 2 : 1;
     parts.push(
       `<image x="${logo.image.x * logoScale}" y="${logo.image.y * logoScale}" width="${logo.image.width * logoScale}" height="${logo.image.height * logoScale}" preserveAspectRatio="xMidYMid meet" href="${escapeXml(logo.source)}" xlink:href="${escapeXml(logo.source)}"/>`,
@@ -94,7 +94,7 @@ function layoutLogo(matrix: QrMatrix, margin: number, logo?: LogoSpec): SvgLogoL
     return undefined;
   }
 
-  if (!isDataUrl(logo.source)) {
+  if (logo.source !== undefined && !isDataUrl(logo.source)) {
     throw new Error(
       "toSvg() only supports logo.source values that are already data URLs. Use qrcode() for file paths and remote URLs.",
     );

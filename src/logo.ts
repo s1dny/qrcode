@@ -7,7 +7,7 @@ export async function normalizeLogo(logo?: LogoSpec): Promise<LogoSpec | undefin
 
   return {
     ...logo,
-    source: await normalizeLogoSource(logo.source),
+    source: logo.source === undefined ? undefined : await normalizeLogoSource(logo.source),
   };
 }
 

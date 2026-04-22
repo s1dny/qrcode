@@ -27,8 +27,20 @@ type BrowserImageElement = {
 type BrowserCanvasContext = {
   clearRect: (...args: number[]) => void;
   drawImage: (...args: unknown[]) => void;
+  getImageData?: (sx: number, sy: number, sw: number, sh: number) => BrowserImageData;
   imageSmoothingEnabled?: boolean;
   imageSmoothingQuality?: "low" | "medium" | "high";
+  putImageData?: (imageData: BrowserImageData, dx: number, dy: number) => void;
+};
+
+type BrowserImageData = {
+  data: Uint8ClampedArray;
+};
+
+type Rgb = {
+  r: number;
+  g: number;
+  b: number;
 };
 
 type BrowserOffscreenCanvas = {
@@ -85,20 +97,23 @@ const browserDomRasterBackend: RasterBackend = {
       rasterContext.drawImage(image, 0, 0, rasterSize, rasterSize);
 
       const outputCanvas = supersampleScale === 1 ? rasterCanvas : documentCtor.createElement("canvas");
+      let outputContext = rasterContext;
       if (outputCanvas !== rasterCanvas) {
         outputCanvas.width = size;
         outputCanvas.height = size;
 
-        const outputContext = outputCanvas.getContext("2d");
-        if (!outputContext) {
+        const downsampleContext = outputCanvas.getContext("2d");
+        if (!downsampleContext) {
           throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
         }
 
+        outputContext = downsampleContext;
         configureRasterScaling(outputContext, true);
         outputContext.clearRect(0, 0, size, size);
         outputContext.drawImage(rasterCanvas, 0, 0, size, size);
       }
 
+      snapSolidSvgFillPixels(outputContext, size, svg);
       const blob = await canvasToBlob(outputCanvas, format);
       return new Uint8Array(await blob.arrayBuffer());
     } finally {
@@ -138,17 +153,20 @@ const browserRasterBackend: RasterBackend = {
       rasterContext.drawImage(bitmap, 0, 0, rasterSize, rasterSize);
 
       const outputCanvas = supersampleScale === 1 ? rasterCanvas : new OffscreenCanvasCtor(size, size);
+      let outputContext = rasterContext;
       if (outputCanvas !== rasterCanvas) {
-        const outputContext = outputCanvas.getContext("2d");
-        if (!outputContext) {
+        const downsampleContext = outputCanvas.getContext("2d");
+        if (!downsampleContext) {
           throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
         }
 
+        outputContext = downsampleContext;
         configureRasterScaling(outputContext, true);
         outputContext.clearRect(0, 0, size, size);
         outputContext.drawImage(rasterCanvas, 0, 0, size, size);
       }
 
+      snapSolidSvgFillPixels(outputContext, size, svg);
       const blob = await outputCanvas.convertToBlob({
         type: format === "png" ? "image/png" : "image/webp",
       });
@@ -259,6 +277,98 @@ function configureRasterScaling(context: BrowserCanvasContext, smooth: boolean):
   if (smooth) {
     context.imageSmoothingQuality = "high";
   }
+}
+
+function snapSolidSvgFillPixels(context: BrowserCanvasContext, size: number, svg: string): void {
+  if (!context.getImageData || !context.putImageData) {
+    return;
+  }
+
+  const colors = getSolidSvgFillColors(svg);
+  if (colors.length === 0) {
+    return;
+  }
+
+  const image = context.getImageData(0, 0, size, size);
+  const data = image.data;
+
+  for (let index = 0; index < data.length; index += 4) {
+    if (data[index + 3]! < 250) {
+      continue;
+    }
+
+    const color = getNearestSnapColor(data[index]!, data[index + 1]!, data[index + 2]!, colors);
+    if (!color) {
+      continue;
+    }
+
+    data[index] = color.r;
+    data[index + 1] = color.g;
+    data[index + 2] = color.b;
+    data[index + 3] = 255;
+  }
+
+  context.putImageData(image, 0, 0);
+}
+
+function getNearestSnapColor(r: number, g: number, b: number, colors: readonly Rgb[]): Rgb | undefined {
+  let nearest: Rgb | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (const color of colors) {
+    const redDistance = Math.abs(r - color.r);
+    const greenDistance = Math.abs(g - color.g);
+    const blueDistance = Math.abs(b - color.b);
+    const maxChannelDistance = Math.max(redDistance, greenDistance, blueDistance);
+    if (maxChannelDistance > 4) {
+      continue;
+    }
+
+    const distance = redDistance * redDistance + greenDistance * greenDistance + blueDistance * blueDistance;
+    if (distance < nearestDistance) {
+      nearest = color;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+}
+
+function getSolidSvgFillColors(svg: string): Rgb[] {
+  const colors = new Map<string, Rgb>();
+
+  for (const match of svg.matchAll(/\sfill="(#[0-9a-fA-F]{3,8})"/g)) {
+    const color = parseHexColor(match[1]!);
+    if (!color) {
+      continue;
+    }
+
+    colors.set(`${color.r},${color.g},${color.b}`, color);
+  }
+
+  return [...colors.values()];
+}
+
+function parseHexColor(value: string): Rgb | undefined {
+  const hex = value.slice(1);
+
+  if (hex.length === 3 || hex.length === 4) {
+    return {
+      r: Number.parseInt(hex[0]! + hex[0]!, 16),
+      g: Number.parseInt(hex[1]! + hex[1]!, 16),
+      b: Number.parseInt(hex[2]! + hex[2]!, 16),
+    };
+  }
+
+  if (hex.length === 6 || hex.length === 8) {
+    return {
+      r: Number.parseInt(hex.slice(0, 2), 16),
+      g: Number.parseInt(hex.slice(2, 4), 16),
+      b: Number.parseInt(hex.slice(4, 6), 16),
+    };
+  }
+
+  return undefined;
 }
 
 function parseSvgViewBox(svg: string): { width: number; height: number } {
