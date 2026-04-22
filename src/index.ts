@@ -1,14 +1,14 @@
 import { encode } from "./core.js";
 import { normalizeLogo } from "./logo.js";
 import { resolveQrCodeOptions } from "./options.js";
-import { rasterizeSvg } from "./raster.js";
+import { getAlignedRasterSize, rasterizeSvg } from "./raster.js";
 import { toSvg } from "./svg.js";
 
 import type { ErrorCorrection, LogoSpec, QrCodeFormat, QrCodeOptions, QrMatrix } from "./types.js";
 
 export type { ErrorCorrection, LogoSpec, QrCodeOptions, QrMatrix };
 
-export { encode, toSvg };
+export { encode, getAlignedRasterSize, rasterizeSvg, toSvg };
 
 export async function qrcode(data: string, opts: QrCodeOptions & { format: "svg" }): Promise<string>;
 export async function qrcode(data: string, opts: QrCodeOptions & { format: "png" }): Promise<Uint8Array>;

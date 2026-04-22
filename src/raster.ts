@@ -1,6 +1,6 @@
 import type { QrCodeFormat } from "./types.js";
 
-type RasterFormat = Exclude<QrCodeFormat, "svg">;
+export type RasterFormat = Exclude<QrCodeFormat, "svg">;
 
 type RasterBackend = {
   canRasterize: () => boolean;
@@ -70,8 +70,7 @@ const browserDomRasterBackend: RasterBackend = {
 
     try {
       const image = await loadSvgImage(svgUrl, ImageCtor);
-      const supersampleScale = shouldSupersampleSvg(svg) ? DOM_RASTER_SUPERSAMPLE_SCALE : 1;
-      const rasterSize = size * supersampleScale;
+      const { rasterSize, supersampleScale } = getRasterDimensions(svg, size);
 
       const rasterCanvas = documentCtor.createElement("canvas");
       rasterCanvas.width = rasterSize;
@@ -95,8 +94,7 @@ const browserDomRasterBackend: RasterBackend = {
           throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
         }
 
-        outputContext.imageSmoothingEnabled = true;
-        outputContext.imageSmoothingQuality = "high";
+        configureRasterScaling(outputContext, true);
         outputContext.clearRect(0, 0, size, size);
         outputContext.drawImage(rasterCanvas, 0, 0, size, size);
       }
@@ -127,18 +125,31 @@ const browserRasterBackend: RasterBackend = {
 
     const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
     const bitmap = await createImageBitmapFn(svgBlob);
+    const { rasterSize, supersampleScale } = getRasterDimensions(svg, size);
 
     try {
-      const canvas = new OffscreenCanvasCtor(size, size);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
+      const rasterCanvas = new OffscreenCanvasCtor(rasterSize, rasterSize);
+      const rasterContext = rasterCanvas.getContext("2d");
+      if (!rasterContext) {
         throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
       }
 
-      ctx.clearRect(0, 0, size, size);
-      ctx.drawImage(bitmap, 0, 0, size, size);
+      rasterContext.clearRect(0, 0, rasterSize, rasterSize);
+      rasterContext.drawImage(bitmap, 0, 0, rasterSize, rasterSize);
 
-      const blob = await canvas.convertToBlob({
+      const outputCanvas = supersampleScale === 1 ? rasterCanvas : new OffscreenCanvasCtor(size, size);
+      if (outputCanvas !== rasterCanvas) {
+        const outputContext = outputCanvas.getContext("2d");
+        if (!outputContext) {
+          throw new Error("Failed to acquire a 2D rendering context for QR rasterization.");
+        }
+
+        configureRasterScaling(outputContext, true);
+        outputContext.clearRect(0, 0, size, size);
+        outputContext.drawImage(rasterCanvas, 0, 0, size, size);
+      }
+
+      const blob = await outputCanvas.convertToBlob({
         type: format === "png" ? "image/png" : "image/webp",
       });
       return new Uint8Array(await blob.arrayBuffer());
@@ -184,6 +195,18 @@ export async function rasterizeSvg(svg: string, size: number, format: RasterForm
   return backend.rasterize(svg, size, format);
 }
 
+export function getAlignedRasterSize(svg: string, minimumSize: number): number {
+  if (!Number.isFinite(minimumSize) || minimumSize <= 0) {
+    throw new Error("minimumSize must be a positive finite number.");
+  }
+
+  const { width, height } = parseSvgViewBox(svg);
+  const viewBoxSize = Math.max(width, height);
+  const roundedMinimumSize = Math.ceil(minimumSize);
+
+  return Math.ceil(roundedMinimumSize / viewBoxSize) * viewBoxSize;
+}
+
 function getRasterBackend(): RasterBackend {
   if (browserDomRasterBackend.canRasterize()) {
     return browserDomRasterBackend;
@@ -221,6 +244,42 @@ async function loadSvgImage(svgUrl: string, ImageCtor: new () => BrowserImageEle
 
 function shouldSupersampleSvg(svg: string): boolean {
   return svg.includes('shape-rendering="geometricPrecision"');
+}
+
+function getRasterDimensions(svg: string, size: number): { rasterSize: number; supersampleScale: number } {
+  const supersampleScale = shouldSupersampleSvg(svg) ? DOM_RASTER_SUPERSAMPLE_SCALE : 1;
+  return {
+    rasterSize: size * supersampleScale,
+    supersampleScale,
+  };
+}
+
+function configureRasterScaling(context: BrowserCanvasContext, smooth: boolean): void {
+  context.imageSmoothingEnabled = smooth;
+  if (smooth) {
+    context.imageSmoothingQuality = "high";
+  }
+}
+
+function parseSvgViewBox(svg: string): { width: number; height: number } {
+  const viewBoxMatch = svg.match(/viewBox="([^"]+)"/i);
+  const viewBox = viewBoxMatch?.[1];
+  if (!viewBox) {
+    throw new Error("The SVG is missing a valid viewBox and cannot be aligned for raster export.");
+  }
+
+  const rawParts = viewBox.split(/[\s,]+/).map((value) => Number.parseFloat(value));
+  if (rawParts.length !== 4 || rawParts.some((value) => !Number.isFinite(value))) {
+    throw new Error("The SVG viewBox could not be parsed for raster export.");
+  }
+
+  const width = rawParts[2]!;
+  const height = rawParts[3]!;
+  if (width <= 0 || height <= 0) {
+    throw new Error("The SVG viewBox could not be parsed for raster export.");
+  }
+
+  return { width, height };
 }
 
 async function canvasToBlob(canvas: BrowserDomCanvas, format: RasterFormat): Promise<Blob> {
